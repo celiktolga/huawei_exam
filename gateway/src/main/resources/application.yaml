@@ -1,0 +1,24 @@
+server:
+  port: 9090
+
+order:
+  destinations:
+    orderServiceUrl: http://${DOCKER_HOST_IP:localhost}:9191
+customer:
+  destinations:
+    customerServiceUrl: http://${DOCKER_HOST_IP:localhost}:9192
+
+spring:
+  application:
+    name: GATEWAY-SERVICE
+  cloud:
+    gateway:
+      routes:
+        - id: order-service
+          uri: ${order.destinations.orderServiceUrl}
+          predicates:
+            - Path=/order/**
+        - id: customer-service
+          uri: ${customer.destinations.customerServiceUrl}
+          predicates:
+            - Path=/customer/**

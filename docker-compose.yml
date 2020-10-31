@@ -1,0 +1,68 @@
+version: '3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.2.4
+    restart: always
+    ports:
+      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      KAFKA_HEAP_OPTS: -Xmx64m
+
+  kafka:
+    image: "confluentinc/cp-kafka:5.2.4"
+    restart: always
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_LISTENERS: LC://kafka:29092,LX://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: LC://kafka:29092,LX://${DOCKER_HOST_IP:-localhost}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LC:PLAINTEXT,LX:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LC
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: -Xmx192m
+
+  configserver:
+    build: configserver/.
+    restart: always
+    ports:
+      - "9091:9091"
+
+  gateway:
+    build: gateway/.
+    restart: always
+    ports:
+      - "9090:9090"
+    depends_on:
+      - configserver
+    command: --spring.profiles.active=prod
+    environment:
+      ORDER_DESTINATIONS_ORDERSERVICEURL: http://order-service:9191
+      CUSTOMER_DESTINATIONS_CUSTOMERSERVICEURL: http://customer-service:9192
+
+  customer-service:
+    build: customer-service/.
+    restart: always
+    ports:
+      - "9192:9192"
+    depends_on:
+      - kafka
+      - zookeeper
+      - configserver
+      - gateway
+    command: --spring.profiles.active=prod
+
+  order-service:
+    build: order-service/.
+    restart: always
+    ports:
+      - "9191:9191"
+    depends_on:
+      - kafka
+      - zookeeper
+      - configserver
+      - gateway
+    command: --spring.profiles.active=prod

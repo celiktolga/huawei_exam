@@ -1,0 +1,15 @@
+server:
+  port: 9192
+spring:
+  application:
+    name: customer-service
+
+  cloud:
+    config:
+      uri: http://localhost:9091
+---
+spring:
+  profiles: prod
+  cloud:
+    config:
+      uri: http://cloud-config-server:9091
